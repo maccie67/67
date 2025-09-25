@@ -1,5 +1,6 @@
 
-<!DOCTYPE html>
+
+  <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -8,16 +9,18 @@
   <style>
     body {
       font-family: 'Arial Rounded MT Bold', sans-serif;
-      background: linear-gradient(135deg, #fcefee, #eaf7fa, #f7f0ff);
+      background: linear-gradient(135deg, #e3f2fd, #bbdefb, #e1f5fe);
       margin: 0;
       padding: 0;
-      color: #444;
+      color: #2e4057;
     }
 
     header {
       display: flex;
       align-items: center;
       padding: 20px;
+      background: #bbdefb;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
 
     header img {
@@ -25,20 +28,20 @@
       width: 120px;
       height: 120px;
       object-fit: cover;
-      border: 4px solid #a6dcef;
+      border: 4px solid #64b5f6;
       margin-right: 20px;
     }
 
     h1 {
       font-size: 2em;
       margin: 0;
-      color: #5b5f97;
+      color: #1e3a8a;
     }
 
     p.tagline {
       font-size: 1.1em;
       margin-top: 5px;
-      color: #6b9080;
+      color: #1565c0;
     }
 
     main {
@@ -48,7 +51,7 @@
     }
 
     .card {
-      background: #ffffffcc;
+      background: #ffffffdd;
       padding: 20px;
       margin: 20px 0;
       border-radius: 16px;
@@ -56,7 +59,7 @@
     }
 
     .card h2 {
-      color: #5b5f97;
+      color: #1e3a8a;
       margin-top: 0;
     }
 
@@ -64,22 +67,34 @@
       text-align: center;
       padding: 20px;
       font-size: 0.9em;
-      color: #888;
+      color: #555;
+      background: #e3f2fd;
+      margin-top: 30px;
     }
 
     .hockey-icon {
       font-size: 1.2em;
       margin-left: 8px;
     }
+
+    a {
+      color: #1565c0;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
 
   <header>
+    <!-- Replace 'profile.jpg' with your actual profile picture file -->
     <img src="profile.jpg" alt="My Profile Picture">
     <div>
       <h1>Macie Legge <span class="hockey-icon">🏒</span></h1>
-      <p class="tagline">Hockey Goalie • Creator • Dreamer</p>
+      <p class="tagline">Hockey Goalie • Creator</p>
     </div>
   </header>
 

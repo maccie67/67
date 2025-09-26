@@ -7,18 +7,19 @@
   <style>
     body {
       font-family: 'Arial Rounded MT Bold', sans-serif;
-      background: linear-gradient(135deg, #fff8e1, #fbe9e7, #fdf6e3);
+      background: #ffffff;
       margin: 0;
       padding: 0;
-      color: #3e2723;
+      color: #2e2e2e;
     }
 
     header {
       display: flex;
       align-items: center;
       padding: 20px;
-      background: #800000; /* Maroon */
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      background: #ffffff;
+      border-bottom: 3px solid #800000; /* maroon accent line */
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
     }
 
     header img {
@@ -26,20 +27,26 @@
       width: 140px;
       height: 140px;
       object-fit: cover;
-      border: 5px solid #ffd700; /* Gold */
+      border: 5px solid #800000; /* maroon border */
       margin-right: 20px;
     }
 
     h1 {
-      font-size: 2.2em;
+      font-size: 2.4em;
       margin: 0;
-      color: #ffd700; /* Gold */
+      color: #800000; /* maroon */
+    }
+
+    h1 span.number {
+      color: #ffd700; /* gold for #31 */
+      font-weight: bold;
+      margin-left: 10px;
     }
 
     p.tagline {
       font-size: 1.2em;
       margin-top: 5px;
-      color: #fceabb;
+      color: #444;
     }
 
     main {
@@ -49,12 +56,12 @@
     }
 
     .card {
-      background: #ffffffdd;
+      background: #ffffff;
       padding: 20px;
       margin: 20px 0;
       border-radius: 16px;
-      border-left: 8px solid #800000;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border: 2px solid #f0f0f0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
     }
 
     .card h2 {
@@ -66,8 +73,9 @@
       text-align: center;
       padding: 20px;
       font-size: 0.9em;
-      color: #fceabb;
-      background: #800000;
+      color: #888;
+      background: #fafafa;
+      border-top: 2px solid #f0f0f0;
       margin-top: 30px;
     }
 
@@ -92,18 +100,33 @@
 
   <header>
     <!-- Profile Picture -->
-    <img src="IMG_6641.jpeg" alt="My Hockey Profile Picture">
+    <img src="hockey-profile.jpeg" alt="My Hockey Profile Picture">
     <div>
-      <h1>Macie Legge <span class="hockey-icon">🏒</span></h1>
-      <p class="tagline">Hockey Goalie</p>
+      <h1>Macie Legge <span class="number">#31</span> <span class="hockey-icon">🏒</span></h1>
+      <p class="tagline">Hockey Goalie • Passion on Ice</p>
     </div>
   </header>
+
+  <main>
+    <div class="card">
+      <h2>About Me</h2>
+      <p>Hi! I'm Macie, a hockey goalie who lives and breathes the game. My number is <strong>#31</strong>, and I take pride in protecting the net while always working to improve my skills on and off the ice.</p>
+    </div>
 
     <div class="card">
       <h2>Hockey Journey</h2>
       <p>🏒 Started as a youth goalie and never looked back.  
          🥅 Trained with some of the best.  
          🏆 Always pushing to stop the next shot!</p>
+    </div>
+
+    <div class="card">
+      <h2>Projects</h2>
+      <ul>
+        <li>Personal Hockey Website</li>
+        <li>Hockey Training Planner</li>
+        <li>Custom Gear Tracker</li>
+      </ul>
     </div>
 
     <div class="card">
@@ -114,8 +137,10 @@
   </main>
 
   <footer>
-    © 2025 Macie Legge • Hockey Goalie
+    © 2025 Macie Legge • Hockey Goalie #31
   </footer>
 
 </body>
 </html>
+
+   

@@ -1,4 +1,4 @@
-   <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -15,11 +15,7 @@
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    // Teams
-    const team1 = [];
-    const team2 = [];
-
-    // Players setup
+    // Player class
     class Player {
       constructor(x, y, color) {
         this.x = x;
@@ -36,18 +32,11 @@
       }
     }
 
-    // Puck
-    const puck = { x: 400, y: 250, radius: 8, vx: 0, vy: 0 };
+    // Teams
+    const team1 = [];
+    const team2 = [];
 
-    function drawPuck() {
-      ctx.beginPath();
-      ctx.arc(puck.x, puck.y, puck.radius, 0, Math.PI * 2);
-      ctx.fillStyle = "black";
-      ctx.fill();
-      ctx.closePath();
-    }
-
-    // Controls: Move Player1 (WASD), shoot with space
+    // Player setup
     let currentPlayer = new Player(100, 250, "red");
     team1.push(currentPlayer);
     team1.push(new Player(100, 150, "red"));
@@ -59,35 +48,34 @@
     team2.push(new Player(700, 350, "blue"));
     team2.push(new Player(750, 250, "darkblue")); // Goalie
 
+    // Puck
+    const puck = { x: 400, y: 250, radius: 8, vx: 3, vy: 2 };
+
+    function drawPuck() {
+      ctx.beginPath();
+      ctx.arc(puck.x, puck.y, puck.radius, 0, Math.PI * 2);
+      ctx.fillStyle = "black";
+      ctx.fill();
+      ctx.closePath();
+    }
+
+    // Controls: arrow keys
     const keys = {};
     document.addEventListener("keydown", e => keys[e.code] = true);
     document.addEventListener("keyup", e => keys[e.code] = false);
 
     function movePlayer() {
-      if (keys["KeyW"]) currentPlayer.y -= 4;
-      if (keys["KeyS"]) currentPlayer.y += 4;
-      if (keys["KeyA"]) currentPlayer.x -= 4;
-      if (keys["KeyD"]) currentPlayer.x += 4;
-
-      // Shoot puck if close
-      if (keys["Space"]) {
-        let dx = puck.x - currentPlayer.x;
-        let dy = puck.y - currentPlayer.y;
-        let dist = Math.sqrt(dx*dx + dy*dy);
-        if (dist < 25) {
-          puck.vx = dx / dist * 6;
-          puck.vy = dy / dist * 6;
-        }
-      }
+      if (keys["ArrowUp"]) currentPlayer.y -= 4;
+      if (keys["ArrowDown"]) currentPlayer.y += 4;
+      if (keys["ArrowLeft"]) currentPlayer.x -= 4;
+      if (keys["ArrowRight"]) currentPlayer.x += 4;
     }
 
     function movePuck() {
       puck.x += puck.vx;
       puck.y += puck.vy;
-      puck.vx *= 0.98; // friction
-      puck.vy *= 0.98;
 
-      // Bounce walls
+      // Bounce off walls
       if (puck.x < puck.radius || puck.x > canvas.width - puck.radius) puck.vx *= -1;
       if (puck.y < puck.radius || puck.y > canvas.height - puck.radius) puck.vy *= -1;
     }
@@ -113,4 +101,7 @@
 </body>
 </html>
 
-  
+       
+   
+
+   

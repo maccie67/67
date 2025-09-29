@@ -26,7 +26,8 @@
       <li>⚫ Touch puck to take control</li>
       <li>⏩ Press <b>Space</b> to shoot</li>
       <li>🤝 Press <b>Shift</b> to pass to a red teammate</li>
-      <li>🥅 Score on the blue net (right side)</li>
+      <li>🥅 Red scores on blue net (right)</li>
+      <li>🥅 Blue scores on red net (left)</li>
       <li>First to 5 goals wins!</li>
     </ul>
   </div>
@@ -51,7 +52,7 @@
         this.isAI = isAI;
         this.isGoalie = isGoalie;
         this.team = team;
-        this.role = role; // "left", "center", "right"
+        this.role = role;
       }
       draw() {
         ctx.beginPath();
@@ -64,34 +65,26 @@
         if (!this.isAI) return;
 
         if (this.isGoalie) {
-          // Goalies track puck vertically, stay near net
+          // Goalies follow puck vertically
           this.y += (puck.y - this.y) * 0.05;
           this.y = Math.max(50, Math.min(450, this.y));
           return;
         }
 
-        // Base positions by role (like formation lanes)
-        let targetX = this.team === "red" ? 200 : 600;
-        let targetY = this.role === "left" ? 150 : this.role === "right" ? 350 : 250;
-
-        // Adjust toward puck when close
-        let dx = puck.x - this.x, dy = puck.y - this.y;
-        let dist = Math.sqrt(dx*dx + dy*dy);
-
-        if (this.team === "blue") {
-          if (dist < 250) { // defend puck
-            this.x += dx / dist * 2;
-            this.y += dy / dist * 2;
+        // If player has the puck, skate toward enemy net
+        if (puck.carriedBy === this) {
+          if (this.team === "red") {
+            this.x += 2.5; // skate toward right net
+            if (this.x > 650) this.shoot();
           } else {
-            this.x += (targetX - this.x) * 0.02;
-            this.y += (targetY - this.y) * 0.02;
+            this.x -= 2.5; // skate toward left net
+            if (this.x < 150) this.shoot();
           }
         } else {
-          if (dist < 200 && puck.carriedBy === this) {
-            // Shoot near net
-            if (this.x > 650) this.shoot();
-          }
-          // Attack positioning
+          // Positioning when not holding puck
+          let targetX = this.team === "red" ? 200 : 600;
+          let targetY = this.role === "left" ? 150 : this.role === "right" ? 350 : 250;
+
           this.x += (targetX - this.x) * 0.02;
           this.y += (targetY - this.y) * 0.02;
         }
@@ -102,8 +95,13 @@
       }
       shoot() {
         puck.carriedBy = null;
-        puck.vx = 8;
-        puck.vy = (Math.random() - 0.5) * 4;
+        if (this.team === "red") {
+          puck.vx = 8;
+          puck.vy = (Math.random() - 0.5) * 4;
+        } else {
+          puck.vx = -8;
+          puck.vy = (Math.random() - 0.5) * 4;
+        }
       }
     }
 
@@ -154,6 +152,7 @@
       currentPlayer.x = Math.max(currentPlayer.radius, Math.min(canvas.width - currentPlayer.radius, currentPlayer.x));
       currentPlayer.y = Math.max(currentPlayer.radius, Math.min(canvas.height - currentPlayer.radius, currentPlayer.y));
 
+      // Pick up puck
       let dx = puck.x - currentPlayer.x, dy = puck.y - currentPlayer.y;
       let dist = Math.sqrt(dx*dx + dy*dy);
       if (dist < currentPlayer.radius + puck.radius + 2 && puck.carriedBy === null) {
@@ -175,7 +174,7 @@
 
     function movePuck() {
       if (puck.carriedBy) {
-        puck.x = puck.carriedBy.x + 20;
+        puck.x = puck.carriedBy.x + (puck.carriedBy.team === "red" ? 20 : -20);
         puck.y = puck.carriedBy.y;
       } else {
         puck.x += puck.vx;
@@ -188,7 +187,7 @@
         if (puck.y < puck.radius || puck.y > canvas.height - puck.radius) puck.vy *= -1;
 
         // Steals
-        [...team2, ...team1].forEach(p => {
+        [...team1, ...team2].forEach(p => {
           let dx = puck.x - p.x, dy = puck.y - p.y;
           let dist = Math.sqrt(dx*dx + dy*dy);
           if (dist < p.radius + puck.radius + 2) {
@@ -249,5 +248,4 @@
   </script>
 </body>
 </html>
- 
-   
+

@@ -1,155 +1,116 @@
-<!DOCTYPE html>
+   <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Goalie Profile</title>
+  <title>GitHub Hockey Game</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #ffffff;
-      color: #222222;
-      margin: 0;
-      padding: 20px;
-    }
-    .profile-header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-    .profile-header img {
-      width: 150px;
-      border-radius: 50%;
-      margin-right: 20px;
-    }
-    h1 {
-      font-size: 2.2em;
-      margin: 0;
-    }
-    h2 {
-      margin-top: 30px;
-      border-bottom: 2px solid #ddd;
-      padding-bottom: 5px;
-    }
-    ul {
-      list-style: none;
-      padding-left: 0;
-    }
-    ul li {
-      margin: 5px 0;
-    }
-    .sponsor {
-      margin-top: 15px;
-      font-weight: bold;
-      color: #0056a4; /* Bauer blue */
-      display: flex;
-      align-items: center;
-    }
-    .sponsor img {
-      height: 30px;
-      margin-left: 10px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-    }
-    table, th, td {
-      border: 1px solid #ddd;
-    }
-    th, td {
-      padding: 10px;
-      text-align: center;
-    }
-    th {
-      background-color: #f4f4f4;
-    }
-    .footer {
-      margin-top: 40px;
-      font-size: 0.9em;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .footer img {
-      height: 20px;
-    }
+    body { margin: 0; background: #0b3d91; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    canvas { background: #1e6c30; border: 5px solid white; }
   </style>
 </head>
 <body>
-  <!-- Profile Picture + Title -->
-  <div class="profile-header">
-    <img src="profile-pic.png" alt="Profile Picture">
-    <div>
-      <h1>🥅 Goalie Profile</h1>
-      <p><strong>[Your Name]</strong> — Goalie #31<br>
-         Boston Jr. Eagles U14 🦅 | Boston, MA</p>
-    </div>
-  </div>
+  <canvas id="gameCanvas" width="800" height="500"></canvas>
 
-  <!-- About Me -->
-  <h2>🏒 About Me</h2>
-  <ul>
-    <li>Position: <strong>Goalie #31</strong></li>
-    <li>Team: <strong>Boston Jr. Eagles U14</strong></li>
-    <li>Hometown: <strong>Boston, Massachusetts</strong></li>
-    <li>Passion: <strong>Stopping pucks and leading from the net</strong></li>
-  </ul>
-  <p class="sponsor">
-    🏆 Sponsored by <strong>Bauer Hockey</strong>
-    <img src="https://upload.wikimedia.org/wikipedia/commons/5/52/Bauer_Logo.svg" alt="Bauer Logo">
-  </p>
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
 
-  <!-- Stats -->
-  <h2>📊 Stats & Focus</h2>
-  <ul>
-    <li>Glove Hand: <strong>Left</strong></li>
-    <li>Style: <strong>Hybrid / Butterfly</strong></li>
-    <li>Favorite Save: <strong>Breakaway stops</strong></li>
-    <li>Off-Ice: <strong>Strength training, quick reflex drills, stick handling</strong></li>
-  </ul>
+    // Teams
+    const team1 = [];
+    const team2 = [];
 
-  <!-- Game Stats -->
-  <h2>📈 Game Stats (2024–2025 Season)</h2>
-  <table>
-    <tr>
-      <th>GP</th>
-      <th>W</th>
-      <th>L</th>
-      <th>GAA</th>
-      <th>SV%</th>
-      <th>SO</th>
-    </tr>
-    <tr>
-      <td>18</td>
-      <td>12</td>
-      <td>6</td>
-      <td>2.10</td>
-      <td>.918</td>
-      <td>3</td>
-    </tr>
-  </table>
+    // Players setup
+    class Player {
+      constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        this.radius = 15;
+        this.color = color;
+      }
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        ctx.closePath();
+      }
+    }
 
-  <!-- Goals -->
-  <h2>🎯 Goals</h2>
-  <ul>
-    <li>Keep a <strong>save percentage above .900</strong></li>
-    <li>Train daily to stay quick on my skates</li>
-    <li>Inspire my teammates with hard work and dedication</li>
-  </ul>
+    // Puck
+    const puck = { x: 400, y: 250, radius: 8, vx: 0, vy: 0 };
 
-  <!-- Connect -->
-  <h2>🤝 Connect with Me</h2>
-  <p>
-    GitHub: <a href="https://github.com/YOURUSERNAME">github.com/YOURUSERNAME</a>
-  </p>
+    function drawPuck() {
+      ctx.beginPath();
+      ctx.arc(puck.x, puck.y, puck.radius, 0, Math.PI * 2);
+      ctx.fillStyle = "black";
+      ctx.fill();
+      ctx.closePath();
+    }
 
-  <div class="footer">
-    © 2025 [Your Name] | Boston Jr. Eagles U14 | Sponsored by <strong>Bauer Hockey</strong>
-    <img src="https://upload.wikimedia.org/wikipedia/commons/5/52/Bauer_Logo.svg" alt="Bauer Logo">
-  </div>
+    // Controls: Move Player1 (WASD), shoot with space
+    let currentPlayer = new Player(100, 250, "red");
+    team1.push(currentPlayer);
+    team1.push(new Player(100, 150, "red"));
+    team1.push(new Player(100, 350, "red"));
+    team1.push(new Player(50, 250, "darkred")); // Goalie
+
+    team2.push(new Player(700, 250, "blue"));
+    team2.push(new Player(700, 150, "blue"));
+    team2.push(new Player(700, 350, "blue"));
+    team2.push(new Player(750, 250, "darkblue")); // Goalie
+
+    const keys = {};
+    document.addEventListener("keydown", e => keys[e.code] = true);
+    document.addEventListener("keyup", e => keys[e.code] = false);
+
+    function movePlayer() {
+      if (keys["KeyW"]) currentPlayer.y -= 4;
+      if (keys["KeyS"]) currentPlayer.y += 4;
+      if (keys["KeyA"]) currentPlayer.x -= 4;
+      if (keys["KeyD"]) currentPlayer.x += 4;
+
+      // Shoot puck if close
+      if (keys["Space"]) {
+        let dx = puck.x - currentPlayer.x;
+        let dy = puck.y - currentPlayer.y;
+        let dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 25) {
+          puck.vx = dx / dist * 6;
+          puck.vy = dy / dist * 6;
+        }
+      }
+    }
+
+    function movePuck() {
+      puck.x += puck.vx;
+      puck.y += puck.vy;
+      puck.vx *= 0.98; // friction
+      puck.vy *= 0.98;
+
+      // Bounce walls
+      if (puck.x < puck.radius || puck.x > canvas.width - puck.radius) puck.vx *= -1;
+      if (puck.y < puck.radius || puck.y > canvas.height - puck.radius) puck.vy *= -1;
+    }
+
+    function drawPlayers() {
+      team1.forEach(p => p.draw());
+      team2.forEach(p => p.draw());
+    }
+
+    function gameLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      drawPlayers();
+      drawPuck();
+      movePlayer();
+      movePuck();
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
+  </script>
 </body>
 </html>
-     
 
   

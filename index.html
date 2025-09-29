@@ -43,17 +43,13 @@
 
     let redScore = 0, blueScore = 0, winScore = 5;
 
-    // Player class
     class Player {
       constructor(x, y, color, isAI=false, isGoalie=false, team="red", role="center") {
-        this.x = x; this.y = y;
-        this.radius = 15;
-        this.color = color;
-        this.isAI = isAI;
-        this.isGoalie = isGoalie;
-        this.team = team;
-        this.role = role;
+        this.x = x; this.y = y; this.radius = 15;
+        this.color = color; this.isAI = isAI;
+        this.isGoalie = isGoalie; this.team = team; this.role = role;
       }
+
       draw() {
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
@@ -61,66 +57,69 @@
         ctx.fill();
         ctx.closePath();
       }
+
       moveAI() {
         if (!this.isAI) return;
 
         if (this.isGoalie) {
-          // Goalies follow puck vertically
           this.y += (puck.y - this.y) * 0.05;
           this.y = Math.max(50, Math.min(450, this.y));
           return;
         }
 
-        // If player has the puck, skate toward enemy net
+        // If AI has the puck, skate toward opponent net
         if (puck.carriedBy === this) {
           if (this.team === "red") {
-            this.x += 2.5; // skate toward right net
+            this.x += 2.5;
             if (this.x > 650) this.shoot();
           } else {
-            this.x -= 2.5; // skate toward left net
+            this.x -= 2.5;
             if (this.x < 150) this.shoot();
           }
         } else {
-          // Positioning when not holding puck
-          let targetX = this.team === "red" ? 200 : 600;
-          let targetY = this.role === "left" ? 150 : this.role === "right" ? 350 : 250;
-
-          this.x += (targetX - this.x) * 0.02;
-          this.y += (targetY - this.y) * 0.02;
+          // Chase puck if nearby
+          let dx = puck.x - this.x, dy = puck.y - this.y;
+          let dist = Math.sqrt(dx*dx + dy*dy);
+          if (dist < 200) {
+            this.x += dx * 0.01;
+            this.y += dy * 0.01;
+          } else {
+            // Return to default position
+            let targetX = this.team === "red" ? 200 : 600;
+            let targetY = this.role === "left" ? 150 : this.role === "right" ? 350 : 250;
+            this.x += (targetX - this.x) * 0.02;
+            this.y += (targetY - this.y) * 0.02;
+          }
         }
 
-        // Keep on screen
         this.x = Math.max(this.radius, Math.min(canvas.width - this.radius, this.x));
         this.y = Math.max(this.radius, Math.min(canvas.height - this.radius, this.y));
       }
+
       shoot() {
         puck.carriedBy = null;
-        if (this.team === "red") {
-          puck.vx = 8;
-          puck.vy = (Math.random() - 0.5) * 4;
-        } else {
-          puck.vx = -8;
-          puck.vy = (Math.random() - 0.5) * 4;
-        }
+        let distToNet = this.team === "red" ? netRight.x - this.x : this.x - netLeft.x;
+        let speed = Math.min(10, distToNet / 20);
+        puck.vx = this.team === "red" ? speed : -speed;
+        puck.vy = (Math.random() - 0.5) * 4;
       }
     }
 
     // Teams
     const team1 = [], team2 = [];
-    let currentPlayer = new Player(100, 250, "red", false, false, "red", "center"); // YOU
+    let currentPlayer = new Player(100, 250, "red", false, false, "red", "center");
     team1.push(currentPlayer);
     team1.push(new Player(100, 150, "red", true, false, "red", "left"));
     team1.push(new Player(100, 350, "red", true, false, "red", "right"));
-    team1.push(new Player(50, 250, "darkred", true, true, "red")); // goalie
+    team1.push(new Player(50, 250, "darkred", true, true, "red"));
 
     team2.push(new Player(700, 250, "blue", true, false, "blue", "center"));
     team2.push(new Player(700, 150, "blue", true, false, "blue", "left"));
     team2.push(new Player(700, 350, "blue", true, false, "blue", "right"));
-    team2.push(new Player(750, 250, "darkblue", true, true, "blue")); // goalie
+    team2.push(new Player(750, 250, "darkblue", true, true, "blue"));
 
     const puck = { x: 400, y: 250, radius: 8, vx: 0, vy: 0, carriedBy: null };
 
-    // Nets
     const netLeft = { x: 10, y: 200, width: 20, height: 100 };
     const netRight = { x: 770, y: 200, width: 20, height: 100 };
 
@@ -148,11 +147,9 @@
       if (keys["ArrowLeft"]) currentPlayer.x -= 4;
       if (keys["ArrowRight"]) currentPlayer.x += 4;
 
-      // Keep user on screen
       currentPlayer.x = Math.max(currentPlayer.radius, Math.min(canvas.width - currentPlayer.radius, currentPlayer.x));
       currentPlayer.y = Math.max(currentPlayer.radius, Math.min(canvas.height - currentPlayer.radius, currentPlayer.y));
 
-      // Pick up puck
       let dx = puck.x - currentPlayer.x, dy = puck.y - currentPlayer.y;
       let dist = Math.sqrt(dx*dx + dy*dy);
       if (dist < currentPlayer.radius + puck.radius + 2 && puck.carriedBy === null) {
@@ -168,7 +165,14 @@
       // Pass
       if (keys["ShiftLeft"] && puck.carriedBy === currentPlayer) {
         let teammate = team1.find(p => p !== currentPlayer && !p.isGoalie);
-        if (teammate) puck.carriedBy = teammate;
+        if (teammate) {
+          puck.carriedBy = null;
+          let dx = teammate.x - puck.x;
+          let dy = teammate.y - puck.y;
+          let dist = Math.sqrt(dx*dx + dy*dy);
+          puck.vx = dx / dist * 8;
+          puck.vy = dy / dist * 8;
+        }
       }
     }
 
@@ -182,11 +186,9 @@
         puck.vx *= 0.98;
         puck.vy *= 0.98;
 
-        // Bounce
         if (puck.x < puck.radius || puck.x > canvas.width - puck.radius) puck.vx *= -1;
         if (puck.y < puck.radius || puck.y > canvas.height - puck.radius) puck.vy *= -1;
 
-        // Steals
         [...team1, ...team2].forEach(p => {
           let dx = puck.x - p.x, dy = puck.y - p.y;
           let dist = Math.sqrt(dx*dx + dy*dy);
@@ -213,9 +215,7 @@
     }
 
     function resetGame() {
-      puck.x = 400; puck.y = 250;
-      puck.vx = 0; puck.vy = 0;
-      puck.carriedBy = null;
+      puck.x = 400; puck.y = 250; puck.vx = 0; puck.vy = 0; puck.carriedBy = null;
       currentPlayer.x = 100; currentPlayer.y = 250;
     }
 
@@ -248,4 +248,4 @@
   </script>
 </body>
 </html>
-
+    

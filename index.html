@@ -61,35 +61,56 @@
       moveAI() {
         if (!this.isAI) return;
 
+        // Goalies follow puck vertically
         if (this.isGoalie) {
           this.y += (puck.y - this.y) * 0.05;
           this.y = Math.max(50, Math.min(450, this.y));
+        }
+
+        // If AI has puck
+        if (puck.carriedBy === this) {
+          if (this.isGoalie) {
+            // Pass to nearest teammate
+            let teammates = this.team === "red" ? team1 : team2;
+            let passTarget = teammates.filter(p => p !== this && !p.isGoalie)
+                                      .reduce((a,b)=> (Math.hypot(b.x-this.x,b.y-this.y) < Math.hypot(a.x-this.x,a.y-this.y)?b:a));
+            let dx = passTarget.x - this.x;
+            let dy = passTarget.y - this.y;
+            let dist = Math.sqrt(dx*dx + dy*dy);
+            puck.vx = dx / dist * 8;
+            puck.vy = dy / dist * 8;
+            puck.carriedBy = null;
+          } else {
+            // Regular AI with puck moves toward opponent net
+            if (this.team === "blue") {
+              this.x -= 2.5;
+              if (this.x < 150) this.shoot();
+            } else {
+              this.x += 2.5;
+              if (this.x > 650) this.shoot();
+            }
+          }
           return;
         }
 
-        // If AI has the puck, skate toward opponent net
-        if (puck.carriedBy === this) {
-          if (this.team === "red") {
-            this.x += 2.5;
-            if (this.x > 650) this.shoot();
-          } else {
-            this.x -= 2.5;
-            if (this.x < 150) this.shoot();
-          }
+        // AI without puck: pick it up if close
+        let dx = puck.x - this.x, dy = puck.y - this.y;
+        let dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < this.radius + puck.radius + 2 && puck.carriedBy === null) {
+          puck.carriedBy = this;
+          return;
+        }
+
+        // AI moves toward puck if close
+        if (dist < 250) {
+          this.x += dx * 0.02;
+          this.y += dy * 0.02;
         } else {
-          // Chase puck if nearby
-          let dx = puck.x - this.x, dy = puck.y - this.y;
-          let dist = Math.sqrt(dx*dx + dy*dy);
-          if (dist < 200) {
-            this.x += dx * 0.01;
-            this.y += dy * 0.01;
-          } else {
-            // Return to default position
-            let targetX = this.team === "red" ? 200 : 600;
-            let targetY = this.role === "left" ? 150 : this.role === "right" ? 350 : 250;
-            this.x += (targetX - this.x) * 0.02;
-            this.y += (targetY - this.y) * 0.02;
-          }
+          // Return to default position
+          let targetX = this.team === "red" ? 200 : 600;
+          let targetY = this.role === "left" ? 150 : this.role === "right" ? 350 : 250;
+          this.x += (targetX - this.x) * 0.02;
+          this.y += (targetY - this.y) * 0.02;
         }
 
         this.x = Math.max(this.radius, Math.min(canvas.width - this.radius, this.x));
@@ -98,10 +119,12 @@
 
       shoot() {
         puck.carriedBy = null;
-        let distToNet = this.team === "red" ? netRight.x - this.x : this.x - netLeft.x;
-        let speed = Math.min(10, distToNet / 20);
-        puck.vx = this.team === "red" ? speed : -speed;
-        puck.vy = (Math.random() - 0.5) * 4;
+        let targetX = this.team === "red" ? netRight.x : netLeft.x;
+        let dx = targetX - this.x;
+        let dy = (Math.random() - 0.5) * 50;
+        let dist = Math.sqrt(dx*dx + dy*dy);
+        puck.vx = dx / dist * 8;
+        puck.vy = dy / dist * 8;
       }
     }
 
@@ -119,7 +142,6 @@
     team2.push(new Player(750, 250, "darkblue", true, true, "blue"));
 
     const puck = { x: 400, y: 250, radius: 8, vx: 0, vy: 0, carriedBy: null };
-
     const netLeft = { x: 10, y: 200, width: 20, height: 100 };
     const netRight = { x: 770, y: 200, width: 20, height: 100 };
 
@@ -156,13 +178,11 @@
         puck.carriedBy = currentPlayer;
       }
 
-      // Shoot
       if (keys["Space"] && puck.carriedBy === currentPlayer) {
         puck.vx = 8; puck.vy = (Math.random() - 0.5) * 4;
         puck.carriedBy = null;
       }
 
-      // Pass
       if (keys["ShiftLeft"] && puck.carriedBy === currentPlayer) {
         let teammate = team1.find(p => p !== currentPlayer && !p.isGoalie);
         if (teammate) {
@@ -177,10 +197,7 @@
     }
 
     function movePuck() {
-      if (puck.carriedBy) {
-        puck.x = puck.carriedBy.x + (puck.carriedBy.team === "red" ? 20 : -20);
-        puck.y = puck.carriedBy.y;
-      } else {
+      if (!puck.carriedBy) {
         puck.x += puck.vx;
         puck.y += puck.vy;
         puck.vx *= 0.98;
@@ -188,14 +205,6 @@
 
         if (puck.x < puck.radius || puck.x > canvas.width - puck.radius) puck.vx *= -1;
         if (puck.y < puck.radius || puck.y > canvas.height - puck.radius) puck.vy *= -1;
-
-        [...team1, ...team2].forEach(p => {
-          let dx = puck.x - p.x, dy = puck.y - p.y;
-          let dist = Math.sqrt(dx*dx + dy*dy);
-          if (dist < p.radius + puck.radius + 2) {
-            puck.carriedBy = p;
-          }
-        });
       }
     }
 
@@ -248,3 +257,7 @@
   </script>
 </body>
 </html>
+  
+
+  
+  

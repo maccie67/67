@@ -49,7 +49,7 @@
     team2.push(new Player(750, 250, "darkblue")); // Goalie
 
     // Puck
-    const puck = { x: 400, y: 250, radius: 8, vx: 3, vy: 2 };
+    const puck = { x: 400, y: 250, radius: 8, vx: 0, vy: 0, carriedBy: null };
 
     function drawPuck() {
       ctx.beginPath();
@@ -59,7 +59,7 @@
       ctx.closePath();
     }
 
-    // Controls: arrow keys
+    // Controls
     const keys = {};
     document.addEventListener("keydown", e => keys[e.code] = true);
     document.addEventListener("keyup", e => keys[e.code] = false);
@@ -69,15 +69,46 @@
       if (keys["ArrowDown"]) currentPlayer.y += 4;
       if (keys["ArrowLeft"]) currentPlayer.x -= 4;
       if (keys["ArrowRight"]) currentPlayer.x += 4;
+
+      // Collision: pick up puck
+      let dx = puck.x - currentPlayer.x;
+      let dy = puck.y - currentPlayer.y;
+      let dist = Math.sqrt(dx*dx + dy*dy);
+
+      if (dist < currentPlayer.radius + puck.radius + 2 && puck.carriedBy === null) {
+        puck.carriedBy = currentPlayer;
+      }
+
+      // Shooting puck
+      if (keys["Space"] && puck.carriedBy === currentPlayer) {
+        // Shoot towards facing direction (last move)
+        let shootSpeed = 8;
+        if (keys["ArrowUp"]) puck.vy = -shootSpeed, puck.vx = 0;
+        else if (keys["ArrowDown"]) puck.vy = shootSpeed, puck.vx = 0;
+        else if (keys["ArrowLeft"]) puck.vx = -shootSpeed, puck.vy = 0;
+        else if (keys["ArrowRight"]) puck.vx = shootSpeed, puck.vy = 0;
+        else puck.vx = 6, puck.vy = 0; // default shoot right
+
+        puck.carriedBy = null; // release puck
+      }
     }
 
     function movePuck() {
-      puck.x += puck.vx;
-      puck.y += puck.vy;
+      if (puck.carriedBy) {
+        // Follow player
+        puck.x = puck.carriedBy.x + 20;
+        puck.y = puck.carriedBy.y;
+      } else {
+        // Free movement
+        puck.x += puck.vx;
+        puck.y += puck.vy;
+        puck.vx *= 0.98; // friction
+        puck.vy *= 0.98;
 
-      // Bounce off walls
-      if (puck.x < puck.radius || puck.x > canvas.width - puck.radius) puck.vx *= -1;
-      if (puck.y < puck.radius || puck.y > canvas.height - puck.radius) puck.vy *= -1;
+        // Bounce off walls
+        if (puck.x < puck.radius || puck.x > canvas.width - puck.radius) puck.vx *= -1;
+        if (puck.y < puck.radius || puck.y > canvas.height - puck.radius) puck.vy *= -1;
+      }
     }
 
     function drawPlayers() {
@@ -100,8 +131,5 @@
   </script>
 </body>
 </html>
-
-       
-   
-
-   
+  
+     

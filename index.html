@@ -77,10 +77,8 @@
             this.y += (homeY - this.y) * 0.04;
           }
 
-          // Keep goalie inside rink
           this.keepInBounds();
 
-          // If goalie gets puck, pass it out
           if (dist < this.radius + puck.radius + 2 && puck.carriedBy === null) {
             puck.carriedBy = this;
             this.passToTeammate();
@@ -111,7 +109,6 @@
           this.y += (targetY - this.y) * 0.02;
         }
 
-        // Stay inside rink
         this.keepInBounds();
 
         if (dist < this.radius + puck.radius + 2 && puck.carriedBy === null) {
@@ -141,7 +138,7 @@
         puck.carriedBy = null;
         let targetX = this.team === "red" ? netRight.x : netLeft.x;
         let dx = targetX - this.x;
-        let dy = (this.team === "blue") ? (Math.random() - 0.5) * 150 : (Math.random() - 0.5) * 50;
+        let dy = (Math.random() - 0.5) * 100;
         let dist = Math.sqrt(dx*dx + dy*dy);
         puck.vx = dx / dist * 7;
         puck.vy = dy / dist * 7;
@@ -164,6 +161,44 @@
     const puck = { x: 400, y: 250, radius: 8, vx: 0, vy: 0, carriedBy: null };
     const netLeft = { x: 10, y: 200, width: 20, height: 100 };
     const netRight = { x: 770, y: 200, width: 20, height: 100 };
+
+    function drawRink() {
+      // Center red line
+      ctx.fillStyle = "red";
+      ctx.fillRect(canvas.width / 2 - 2, 0, 4, canvas.height);
+
+      // Blue lines
+      ctx.fillStyle = "blue";
+      ctx.fillRect(canvas.width / 3 - 2, 0, 4, canvas.height);
+      ctx.fillRect(2 * canvas.width / 3 - 2, 0, 4, canvas.height);
+
+      // Center circle
+      ctx.beginPath();
+      ctx.arc(canvas.width / 2, canvas.height / 2, 50, 0, Math.PI * 2);
+      ctx.strokeStyle = "red";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.closePath();
+
+      // Goal creases
+      ctx.fillStyle = "rgba(0, 150, 255, 0.3)"; // light blue
+
+      // Left crease
+      ctx.beginPath();
+      ctx.arc(netLeft.x + netLeft.width, netLeft.y + netLeft.height / 2, 60, -Math.PI/2, Math.PI/2, false);
+      ctx.lineTo(netLeft.x + netLeft.width, netLeft.y + netLeft.height);
+      ctx.lineTo(netLeft.x + netLeft.width, netLeft.y);
+      ctx.closePath();
+      ctx.fill();
+
+      // Right crease
+      ctx.beginPath();
+      ctx.arc(netRight.x, netRight.y + netRight.height / 2, 60, Math.PI/2, -Math.PI/2, false);
+      ctx.lineTo(netRight.x, netRight.y);
+      ctx.lineTo(netRight.x, netRight.y + netRight.height);
+      ctx.closePath();
+      ctx.fill();
+    }
 
     function drawNet(net, color) {
       ctx.fillStyle = color;
@@ -189,7 +224,6 @@
       if (keys["ArrowLeft"]) currentPlayer.x -= 4;
       if (keys["ArrowRight"]) currentPlayer.x += 4;
 
-      // Keep player inside rink
       currentPlayer.keepInBounds();
 
       let dx = puck.x - currentPlayer.x, dy = puck.y - currentPlayer.y;
@@ -233,7 +267,6 @@
           puck.y = Math.max(puck.radius, Math.min(canvas.height - puck.radius, puck.y));
         }
       } else {
-        // Stick with player, but still inside rink
         puck.x = puck.carriedBy.x;
         puck.y = puck.carriedBy.y;
       }
@@ -271,6 +304,7 @@
 
     function gameLoop() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawRink();
       drawNet(netLeft, "red");
       drawNet(netRight, "blue");
       drawPlayers();
@@ -285,4 +319,3 @@
   </script>
 </body>
 </html>
- 

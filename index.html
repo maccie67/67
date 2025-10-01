@@ -1,210 +1,253 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Hockey Game</title>
-<style>
-  body { margin: 0; background: #0b3d91; display: flex; justify-content: center; align-items: center; height: 100vh; }
-  canvas { background: white; border: 5px solid black; }
-  #instructions, #scoreboard {
-    position: absolute;
-    padding: 10px;
-    background: rgba(0,0,0,0.7);
-    color: white;
-    font-family: Arial, sans-serif;
-    border-radius: 5px;
-  }
-  #instructions { top: 10px; left: 10px; max-width: 350px; }
-  #scoreboard { top: 10px; right: 10px; font-size: 20px; }
-</style>
+  <meta charset="UTF-8">
+  <title>GitHub Hockey Game</title>
+  <style>
+    body { margin: 0; background: #0b3d91; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    canvas { background: white; border: 5px solid black; }
+    #instructions, #scoreboard {
+      position: absolute;
+      padding: 10px;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      font-family: Arial, sans-serif;
+      border-radius: 5px;
+    }
+    #instructions { top: 10px; left: 10px; max-width: 350px; }
+    #scoreboard { top: 10px; right: 10px; font-size: 20px; }
+  </style>
 </head>
 <body>
-<div id="instructions">
-<h3>🏒 Hockey Game Instructions</h3>
-<ul>
-<li>➡️ Move with <b>Arrow Keys</b></li>
-<li>⚫ Touch puck to take control</li>
-<li>⏩ Press <b>Space</b> to shoot (not from inside crease)</li>
-<li>🤝 Press <b>Shift</b> to pass to a red teammate</li>
-<li>🥅 Red scores on blue net (right)</li>
-<li>🥅 Blue scores on red net (left)</li>
-<li>First to 5 goals wins!</li>
-</ul>
-</div>
-<div id="scoreboard">Red 0 - 0 Blue</div>
-<canvas id="gameCanvas" width="800" height="400"></canvas>
+  <div id="instructions">
+    <h3>🏒 Hockey Game Instructions</h3>
+    <ul>
+      <li>➡️ Move with <b>Arrow Keys</b></li>
+      <li>⚫ Touch puck to take control</li>
+      <li>⏩ Press <b>Space</b> to shoot</li>
+      <li>🤝 Press <b>Shift</b> to pass to a red teammate</li>
+      <li>🥅 Red scores on blue net (right)</li>
+      <li>🥅 Blue scores on red net (left)</li>
+      <li>First to 5 goals wins!</li>
+    </ul>
+  </div>
 
-<script>
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
-const scoreboard = document.getElementById("scoreboard");
+  <div id="scoreboard">Red 0 - 0 Blue</div>
 
-let keys = {};
-let score = { red: 0, blue: 0 };
-document.addEventListener("keydown", e => keys[e.code] = true);
-document.addEventListener("keyup", e => keys[e.code] = false);
+  <canvas id="gameCanvas" width="800" height="500"></canvas>
 
-class Player {
-  constructor(x, y, color, isAI=false, isGoalie=false, team="red") {
-    this.x = x; this.y = y;
-    this.color = color;
-    this.radius = 10;
-    this.speed = 2;
-    this.isAI = isAI;
-    this.isGoalie = isGoalie;
-    this.team = team;
-  }
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const scoreboard = document.getElementById("scoreboard");
 
-  draw() {
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2);
-    ctx.fillStyle = this.color;
-    ctx.fill(); ctx.closePath();
-  }
+    let redScore = 0, blueScore = 0, winScore = 5;
 
-  moveAI() {
-    if (!this.isAI) return;
+    class Player {
+      constructor(x, y, color, isAI=false, isGoalie=false, team="red", role="center") {
+        this.x = x; this.y = y; this.radius = 15;
+        this.color = color; this.isAI = isAI;
+        this.isGoalie = isGoalie; this.team = team; this.role = role;
+      }
 
-    if (this.isGoalie) {
-      // Goalies follow puck vertically
-      let homeX = this.team === "red" ? netLeft.x + netLeft.width + this.radius : netRight.x - this.radius;
-      let homeY = puck.y;
-      this.x += (homeX - this.x) * 0.1;
-      this.y += (homeY - this.y) * 0.1;
-      if (this.team === "red") this.x = Math.max(netLeft.x + netLeft.width, Math.min(netLeft.x + netLeft.width + 30, this.x));
-      else this.x = Math.max(netRight.x - 30, Math.min(netRight.x, this.x));
-      this.y = Math.max(netLeft.y, Math.min(netLeft.y + netLeft.height, this.y));
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        ctx.closePath();
+      }
 
-      let dx = puck.x - this.x, dy = puck.y - this.y;
-      if (Math.sqrt(dx*dx + dy*dy) < this.radius + puck.radius + 2 && !puck.carriedBy) this.passToTeammate();
-      return;
-    }
+      moveAI() {
+        if (!this.isAI) return;
 
-    // Blue AI logic
-    if (this.team === "blue" && !this.isGoalie) {
-      if (puck.carriedBy === currentPlayer) {
-        // Intercept you by positioning between you and net
-        let netX = netLeft.x + netLeft.width/2;
-        let targetX = (currentPlayer.x + netX) / 2;
-        let targetY = currentPlayer.y;
-        let dx = targetX - this.x;
-        let dy = targetY - this.y;
-        let dist = Math.sqrt(dx*dx + dy*dy);
-        if(dist>0){ this.x += dx/dist * 1.5; this.y += dy/dist * 1.5; }
+        if (this.isGoalie) {
+          this.y += (puck.y - this.y) * 0.05;
+          this.y = Math.max(50, Math.min(450, this.y));
+          return;
+        }
 
-        // Try to steal if close
-        if (dist < this.radius + puck.radius + 2) puck.carriedBy = this;
-        return;
+        // If AI has the puck, skate toward opponent net
+        if (puck.carriedBy === this) {
+          if (this.team === "red") {
+            this.x += 2.5;
+            if (this.x > 650) this.shoot();
+          } else {
+            this.x -= 2.5;
+            if (this.x < 150) this.shoot();
+          }
+        } else {
+          // Chase puck if nearby
+          let dx = puck.x - this.x, dy = puck.y - this.y;
+          let dist = Math.sqrt(dx*dx + dy*dy);
+          if (dist < 200) {
+            this.x += dx * 0.01;
+            this.y += dy * 0.01;
+          } else {
+            // Return to default position
+            let targetX = this.team === "red" ? 200 : 600;
+            let targetY = this.role === "left" ? 150 : this.role === "right" ? 350 : 250;
+            this.x += (targetX - this.x) * 0.02;
+            this.y += (targetY - this.y) * 0.02;
+          }
+        }
+
+        this.x = Math.max(this.radius, Math.min(canvas.width - this.radius, this.x));
+        this.y = Math.max(this.radius, Math.min(canvas.height - this.radius, this.y));
+      }
+
+      shoot() {
+        puck.carriedBy = null;
+        let distToNet = this.team === "red" ? netRight.x - this.x : this.x - netLeft.x;
+        let speed = Math.min(10, distToNet / 20);
+        puck.vx = this.team === "red" ? speed : -speed;
+        puck.vy = (Math.random() - 0.5) * 4;
       }
     }
 
-    // Normal AI movement toward puck or net
-    if (puck.carriedBy === this) {
-      if (this.team === "red") this.x += 1.5;
-      else this.x -= 1.5;
-      if ((this.team==="red" && this.x > canvas.width-150)||(this.team==="blue" && this.x<150)) this.shoot();
-    } else {
-      if (this.team==="red") this.x += (200-this.x)*0.01;
-      else this.x += (600-this.x)*0.01;
-      this.y += (puck.y-this.y)*0.01;
+    // Teams
+    const team1 = [], team2 = [];
+    let currentPlayer = new Player(100, 250, "red", false, false, "red", "center");
+    team1.push(currentPlayer);
+    team1.push(new Player(100, 150, "red", true, false, "red", "left"));
+    team1.push(new Player(100, 350, "red", true, false, "red", "right"));
+    team1.push(new Player(50, 250, "darkred", true, true, "red"));
+
+    team2.push(new Player(700, 250, "blue", true, false, "blue", "center"));
+    team2.push(new Player(700, 150, "blue", true, false, "blue", "left"));
+    team2.push(new Player(700, 350, "blue", true, false, "blue", "right"));
+    team2.push(new Player(750, 250, "darkblue", true, true, "blue"));
+
+    const puck = { x: 400, y: 250, radius: 8, vx: 0, vy: 0, carriedBy: null };
+
+    const netLeft = { x: 10, y: 200, width: 20, height: 100 };
+    const netRight = { x: 770, y: 200, width: 20, height: 100 };
+
+    function drawNet(net, color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(net.x, net.y, net.width, net.height);
     }
-  }
 
-  passToTeammate() {
-    let mates = (this.team==="red"?team1:team2).filter(p=>!p.isGoalie);
-    if (mates.length>0) {
-      let mate = mates[Math.floor(Math.random()*mates.length)];
-      puck.carriedBy=null;
-      let dx = mate.x - this.x, dy = mate.y - this.y;
-      let dist = Math.sqrt(dx*dx+dy*dy);
-      puck.vx=dx/dist*5; puck.vy=dy/dist*5;
+    function drawPuck() {
+      ctx.beginPath();
+      ctx.arc(puck.x, puck.y, puck.radius, 0, Math.PI * 2);
+      ctx.fillStyle = "black";
+      ctx.fill();
+      ctx.closePath();
     }
-  }
 
-  shoot() {
-    if (puck.carriedBy === this) {
-      if (this.team==="red" && inCrease(this,netRight)) return;
-      if (this.team==="blue" && inCrease(this,netLeft)) return;
-      puck.carriedBy = null;
-      puck.vx = this.team==="red"?6:-6;
-      puck.vy = (Math.random()-0.5)*4;
+    // Controls
+    const keys = {};
+    document.addEventListener("keydown", e => keys[e.code] = true);
+    document.addEventListener("keyup", e => keys[e.code] = false);
+
+    function movePlayer() {
+      if (keys["ArrowUp"]) currentPlayer.y -= 4;
+      if (keys["ArrowDown"]) currentPlayer.y += 4;
+      if (keys["ArrowLeft"]) currentPlayer.x -= 4;
+      if (keys["ArrowRight"]) currentPlayer.x += 4;
+
+      currentPlayer.x = Math.max(currentPlayer.radius, Math.min(canvas.width - currentPlayer.radius, currentPlayer.x));
+      currentPlayer.y = Math.max(currentPlayer.radius, Math.min(canvas.height - currentPlayer.radius, currentPlayer.y));
+
+      let dx = puck.x - currentPlayer.x, dy = puck.y - currentPlayer.y;
+      let dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < currentPlayer.radius + puck.radius + 2 && puck.carriedBy === null) {
+        puck.carriedBy = currentPlayer;
+      }
+
+      // Shoot
+      if (keys["Space"] && puck.carriedBy === currentPlayer) {
+        puck.vx = 8; puck.vy = (Math.random() - 0.5) * 4;
+        puck.carriedBy = null;
+      }
+
+      // Pass
+      if (keys["ShiftLeft"] && puck.carriedBy === currentPlayer) {
+        let teammate = team1.find(p => p !== currentPlayer && !p.isGoalie);
+        if (teammate) {
+          puck.carriedBy = null;
+          let dx = teammate.x - puck.x;
+          let dy = teammate.y - puck.y;
+          let dist = Math.sqrt(dx*dx + dy*dy);
+          puck.vx = dx / dist * 8;
+          puck.vy = dy / dist * 8;
+        }
+      }
     }
-  }
-}
 
-class Puck {
-  constructor(x,y){ this.x=x; this.y=y; this.radius=5; this.vx=0; this.vy=0; this.carriedBy=null; }
-  draw(){ ctx.beginPath(); ctx.arc(this.x,this.y,this.radius,0,Math.PI*2); ctx.fillStyle="black"; ctx.fill(); ctx.closePath(); }
-  update(){
-    if(this.carriedBy){ this.x=this.carriedBy.x; this.y=this.carriedBy.y; } 
-    else { this.x+=this.vx; this.y+=this.vy; this.vx*=0.98; this.vy*=0.98; }
-    if(this.x-this.radius<0){ this.x=this.radius; this.vx*=-0.5; }
-    if(this.x+this.radius>canvas.width){ this.x=canvas.width-this.radius; this.vx*=-0.5; }
-    if(this.y-this.radius<0){ this.y=this.radius; this.vy*=-0.5; }
-    if(this.y+this.radius>canvas.height){ this.y=canvas.height-this.radius; this.vy*=-0.5; }
-  }
-}
+    function movePuck() {
+      if (puck.carriedBy) {
+        puck.x = puck.carriedBy.x + (puck.carriedBy.team === "red" ? 20 : -20);
+        puck.y = puck.carriedBy.y;
+      } else {
+        puck.x += puck.vx;
+        puck.y += puck.vy;
+        puck.vx *= 0.98;
+        puck.vy *= 0.98;
 
-function drawRink(){
-  ctx.strokeStyle="red"; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(canvas.width/2,0); ctx.lineTo(canvas.width/2,canvas.height); ctx.stroke();
-  ctx.strokeStyle="blue"; ctx.beginPath(); ctx.moveTo(canvas.width/3,0); ctx.lineTo(canvas.width/3,canvas.height); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(2*canvas.width/3,0); ctx.lineTo(2*canvas.width/3,canvas.height); ctx.stroke();
-  ctx.beginPath(); ctx.arc(canvas.width/2,canvas.height/2,40,0,Math.PI*2); ctx.stroke();
-  drawCrease(netLeft,"blue"); drawCrease(netRight,"blue");
-}
+        if (puck.x < puck.radius || puck.x > canvas.width - puck.radius) puck.vx *= -1;
+        if (puck.y < puck.radius || puck.y > canvas.height - puck.radius) puck.vy *= -1;
 
-function drawCrease(net,color){ ctx.strokeStyle=color; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(net.x+(net===netLeft?net.width:0),net.y+net.height/2,40,Math.PI/2,-Math.PI/2,net===netRight); ctx.stroke(); }
-function inCrease(player,net){ let cx=net.x+(net===netLeft?net.width:0),cy=net.y+net.height/2; return Math.sqrt((player.x-cx)**2+(player.y-cy)**2)<40; }
+        [...team1, ...team2].forEach(p => {
+          let dx = puck.x - p.x, dy = puck.y - p.y;
+          let dist = Math.sqrt(dx*dx + dy*dy);
+          if (dist < p.radius + puck.radius + 2) {
+            puck.carriedBy = p;
+          }
+        });
+      }
+    }
 
-let netLeft={x:0,y:150,width:10,height:100}, netRight={x:790,y:150,width:10,height:100};
-let team1=[new Player(100,200,"red",false,false,"red"),new Player(80,150,"red",true,false,"red"),new Player(80,250,"red",true,false,"red"),new Player(50,200,"darkred",true,true,"red")];
-let team2=[new Player(700,150,"blue",true,false,"blue"),new Player(700,250,"blue",true,false,"blue"),new Player(750,200,"darkblue",true,true,"blue")];
-let currentPlayer=team1[0];
-let puck=new Puck(400,200);
+    function checkGoals() {
+      if (puck.x - puck.radius < netLeft.x + netLeft.width && puck.y > netLeft.y && puck.y < netLeft.y + netLeft.height) {
+        blueScore++; updateScore(); resetGame();
+      }
+      if (puck.x + puck.radius > netRight.x && puck.y > netRight.y && puck.y < netRight.y + netRight.height) {
+        redScore++; updateScore(); resetGame();
+      }
+    }
 
-function drawGoals(){ ctx.fillStyle="gray"; ctx.fillRect(netLeft.x,netLeft.y,netLeft.width,netLeft.height); ctx.fillRect(netRight.x,netRight.y,netRight.width,netRight.height); }
+    function updateScore() {
+      scoreboard.textContent = `Red ${redScore} - ${blueScore} Blue`;
+      if (redScore >= winScore) { alert("🏆 Red team wins!"); resetMatch(); }
+      if (blueScore >= winScore) { alert("🏆 Blue team wins!"); resetMatch(); }
+    }
 
-function updateScore(){ scoreboard.textContent=`Red ${score.red} - ${score.blue} Blue`; if(score.red>=5){alert("🏆 Red wins!");resetMatch();} if(score.blue>=5){alert("🏆 Blue wins!");resetMatch();} }
+    function resetGame() {
+      puck.x = 400; puck.y = 250; puck.vx = 0; puck.vy = 0; puck.carriedBy = null;
+      currentPlayer.x = 100; currentPlayer.y = 250;
+    }
 
-function checkGoal(){ if(puck.x-puck.radius<=netLeft.x+netLeft.width&&puck.y>netLeft.y&&puck.y<netLeft.y+netLeft.height){score.blue++;updateScore();reset();} if(puck.x+puck.radius>=netRight.x&&puck.y>netRight.y&&puck.y<netRight.y+netRight.height){score.red++;updateScore();reset();} }
+    function resetMatch() {
+      redScore = 0; blueScore = 0;
+      updateScore(); resetGame();
+    }
 
-function reset(){ puck.x=400;puck.y=200;puck.vx=0;puck.vy=0;puck.carriedBy=null;currentPlayer.x=100;currentPlayer.y=200; }
-function resetMatch(){score.red=0;score.blue=0;updateScore();reset();}
+    function drawPlayers() {
+      team1.forEach(p => { p.draw(); p.moveAI(); });
+      team2.forEach(p => { p.draw(); p.moveAI(); });
+    }
 
-function movePlayer(player){
-  if(keys["ArrowUp"])player.y-=player.speed;
-  if(keys["ArrowDown"])player.y+=player.speed;
-  if(keys["ArrowLeft"])player.x-=player.speed;
-  if(keys["ArrowRight"])player.x+=player.speed;
-  player.x=Math.max(player.radius,Math.min(canvas.width-player.radius,player.x));
-  player.y=Math.max(player.radius,Math.min(canvas.height-player.radius,player.y));
-  if(keys["Space"]&&puck.carriedBy===player)player.shoot();
-  if(keys["ShiftLeft"]&&puck.carriedBy===player){ let mate=team1.find(p=>p!==player&&!p.isGoalie); if(mate){puck.carriedBy=null;let dx=mate.x-player.x,dy=mate.y-player.y,dist=Math.sqrt(dx*dx+dy*dy); puck.vx=dx/dist*5; puck.vy=dy/dist*5;} }
-}
+    function gameLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-function update(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  drawRink(); drawGoals();
+      drawNet(netLeft, "red");
+      drawNet(netRight, "blue");
 
-  if(puck.carriedBy===currentPlayer){ team1.forEach(p=>{ if(p.isAI&&!p.isGoalie){ p.x+=(currentPlayer.x+60-p.x)*0.02; p.y+=(currentPlayer.y+(Math.random()*60-30)-p.y)*0.02;} }); }
+      drawPlayers();
+      drawPuck();
+      movePlayer();
+      movePuck();
+      checkGoals();
 
-  team1.forEach(p=>{ if(p.isAI)p.moveAI(); p.draw(); });
-  team2.forEach(p=>{ if(p.isAI)p.moveAI(); p.draw(); });
-  movePlayer(currentPlayer);
+      requestAnimationFrame(gameLoop);
+    }
 
-  puck.update(); puck.draw();
-
-  [...team1,...team2].forEach(p=>{ let dx=p.x-puck.x,dy=p.y-puck.y; if(Math.sqrt(dx*dx+dy*dy)<p.radius+puck.radius&&!puck.carriedBy)puck.carriedBy=p; });
-
-  checkGoal(); requestAnimationFrame(update);
-}
-update();
-</script>
+    gameLoop();
+  </script>
 </body>
 </html>
 
-
-
- 
-      
-    
+   
+     

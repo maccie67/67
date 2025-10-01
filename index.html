@@ -65,20 +65,22 @@
         if (this.isGoalie) {
           let dx = puck.x - this.x, dy = puck.y - this.y;
           let dist = Math.sqrt(dx*dx + dy*dy);
+          let chaseRange = (this.team === "blue") ? 80 : 120;
 
-          // If puck nearby, chase it
-          if (dist < 120 && puck.carriedBy === null) {
-            this.x += dx * 0.05;
-            this.y += dy * 0.05;
+          if (dist < chaseRange && puck.carriedBy === null) {
+            this.x += dx * 0.04;
+            this.y += dy * 0.04;
           } else {
-            // Otherwise return near net
             let homeX = this.team === "red" ? 50 : 750;
             let homeY = 250;
-            this.x += (homeX - this.x) * 0.05;
-            this.y += (homeY - this.y) * 0.05;
+            this.x += (homeX - this.x) * 0.04;
+            this.y += (homeY - this.y) * 0.04;
           }
 
-          // If goalie picks up puck, pass it
+          // Keep goalie inside rink
+          this.keepInBounds();
+
+          // If goalie gets puck, pass it out
           if (dist < this.radius + puck.radius + 2 && puck.carriedBy === null) {
             puck.carriedBy = this;
             this.passToTeammate();
@@ -86,36 +88,40 @@
           return;
         }
 
-        // Regular skater AI
+        // Skater AI
         let dx = puck.x - this.x, dy = puck.y - this.y;
         let dist = Math.sqrt(dx*dx + dy*dy);
 
         if (puck.carriedBy === this) {
-          // Skater has puck
           if (this.team === "blue") {
-            this.x -= 2.5;
-            if (this.x < 150) this.shoot();
+            this.x -= 1.5;
+            if (this.x < 200) this.shoot();
           } else {
             this.x += 2.5;
-            if (this.x > 650) this.shoot();
+            if (this.x > 600) this.shoot();
           }
-          return;
-        }
-
-        if (dist < 200) {
-          this.x += dx * 0.02;
-          this.y += dy * 0.02;
+        } else if (dist < 200) {
+          let speed = (this.team === "blue") ? 0.01 : 0.02;
+          this.x += dx * speed;
+          this.y += dy * speed;
         } else {
-          // Default position
           let targetX = this.team === "red" ? 200 : 600;
           let targetY = this.role === "left" ? 150 : this.role === "right" ? 350 : 250;
           this.x += (targetX - this.x) * 0.02;
           this.y += (targetY - this.y) * 0.02;
         }
 
+        // Stay inside rink
+        this.keepInBounds();
+
         if (dist < this.radius + puck.radius + 2 && puck.carriedBy === null) {
           puck.carriedBy = this;
         }
+      }
+
+      keepInBounds() {
+        this.x = Math.max(this.radius, Math.min(canvas.width - this.radius, this.x));
+        this.y = Math.max(this.radius, Math.min(canvas.height - this.radius, this.y));
       }
 
       passToTeammate() {
@@ -126,8 +132,8 @@
         let dx = passTarget.x - this.x;
         let dy = passTarget.y - this.y;
         let dist = Math.sqrt(dx*dx + dy*dy);
-        puck.vx = dx / dist * 8;
-        puck.vy = dy / dist * 8;
+        puck.vx = dx / dist * 7;
+        puck.vy = dy / dist * 7;
         puck.carriedBy = null;
       }
 
@@ -135,10 +141,10 @@
         puck.carriedBy = null;
         let targetX = this.team === "red" ? netRight.x : netLeft.x;
         let dx = targetX - this.x;
-        let dy = (Math.random() - 0.5) * 50;
+        let dy = (this.team === "blue") ? (Math.random() - 0.5) * 150 : (Math.random() - 0.5) * 50;
         let dist = Math.sqrt(dx*dx + dy*dy);
-        puck.vx = dx / dist * 8;
-        puck.vy = dy / dist * 8;
+        puck.vx = dx / dist * 7;
+        puck.vy = dy / dist * 7;
       }
     }
 
@@ -183,6 +189,9 @@
       if (keys["ArrowLeft"]) currentPlayer.x -= 4;
       if (keys["ArrowRight"]) currentPlayer.x += 4;
 
+      // Keep player inside rink
+      currentPlayer.keepInBounds();
+
       let dx = puck.x - currentPlayer.x, dy = puck.y - currentPlayer.y;
       let dist = Math.sqrt(dx*dx + dy*dy);
       if (dist < currentPlayer.radius + puck.radius + 2 && puck.carriedBy === null) {
@@ -213,7 +222,18 @@
         puck.y += puck.vy;
         puck.vx *= 0.98;
         puck.vy *= 0.98;
+
+        // Bounce off walls
+        if (puck.x - puck.radius < 0 || puck.x + puck.radius > canvas.width) {
+          puck.vx *= -1;
+          puck.x = Math.max(puck.radius, Math.min(canvas.width - puck.radius, puck.x));
+        }
+        if (puck.y - puck.radius < 0 || puck.y + puck.radius > canvas.height) {
+          puck.vy *= -1;
+          puck.y = Math.max(puck.radius, Math.min(canvas.height - puck.radius, puck.y));
+        }
       } else {
+        // Stick with player, but still inside rink
         puck.x = puck.carriedBy.x;
         puck.y = puck.carriedBy.y;
       }
@@ -265,3 +285,4 @@
   </script>
 </body>
 </html>
+ 

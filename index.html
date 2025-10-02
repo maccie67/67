@@ -49,7 +49,7 @@ class Player {
     this.x = x; this.y = y;
     this.color = color;
     this.radius = 10;
-    this.speed = 2;
+    this.speed = 2.5;
     this.isAI = isAI;
     this.isGoalie = isGoalie;
     this.team = team;
@@ -67,48 +67,54 @@ class Player {
     if (!this.isAI) return;
 
     if (this.isGoalie) {
-      // Goalies move side-to-side with puck
+      // Goalies track puck
       let homeX = this.team === "red" ? netLeft.x + netLeft.width + this.radius : netRight.x - this.radius;
       let homeY = puck.y;
-      this.x += (homeX - this.x) * 0.1;
-      this.y += (homeY - this.y) * 0.1;
-      if (this.team === "red") this.x = Math.max(netLeft.x + netLeft.width, Math.min(netLeft.x + netLeft.width + 30, this.x));
-      else this.x = Math.max(netRight.x - 30, Math.min(netRight.x, this.x));
+      this.x += (homeX - this.x) * 0.05;
+      this.y += (homeY - this.y) * 0.05;
+
+      if (this.team === "red") this.x = Math.max(netLeft.x + netLeft.width, Math.min(netLeft.x + netLeft.width + 15, this.x));
+      else this.x = Math.max(netRight.x - 15, Math.min(netRight.x, this.x));
       this.y = Math.max(netLeft.y, Math.min(netLeft.y + netLeft.height, this.y));
 
-      // Bounce puck away on save
+      // Bounce puck
       let dx = puck.x - this.x, dy = puck.y - this.y;
       if (Math.sqrt(dx*dx + dy*dy) < this.radius + puck.radius + 2) {
         puck.carriedBy = null;
-        puck.vx = (Math.random() - 0.5) * 6;
-        puck.vy = (Math.random() - 0.5) * 6;
+        puck.vx = (Math.random() - 0.5) * 7;
+        puck.vy = (Math.random() - 0.5) * 7;
       }
       return;
     }
 
-    // AI Skater logic
+    // Skater AI
     if (puck.carriedBy === this) {
+      // Random pass
       if (this.passCooldown <= 0 && Math.random() < 0.01) {
         this.passToTeammate();
         this.passCooldown = 100;
-      } else {
-        this.passCooldown--;
-      }
-      if (this.team === "red") this.x += 1.5;
-      else this.x -= 1.5;
+      } else this.passCooldown--;
 
-      if ((this.team==="red" && this.x > canvas.width-150)||(this.team==="blue" && this.x<150)) this.shoot();
+      // Skate
+      if (this.team === "red") this.x += 2;
+      else this.x -= 2;
+
+      // Shoot when close
+      if ((this.team==="red" && this.x > canvas.width-150) || 
+          (this.team==="blue" && this.x < 150)) {
+        this.shoot();
+      }
     } else {
-      this.x += (puck.x-this.x)*0.01;
-      this.y += (puck.y-this.y)*0.01;
+      this.x += (puck.x-this.x)*0.015;
+      this.y += (puck.y-this.y)*0.015;
     }
 
     this.avoidTeammates();
   }
 
   avoidTeammates() {
-    let teammates = this.team==="red"?team1:team2;
-    teammates.forEach(m => {
+    let mates = this.team==="red"?team1:team2;
+    mates.forEach(m => {
       if (m===this) return;
       let dx=this.x-m.x, dy=this.y-m.y;
       let dist=Math.sqrt(dx*dx+dy*dy);
@@ -126,7 +132,7 @@ class Player {
       puck.carriedBy=null;
       let dx = mate.x - this.x, dy = mate.y - this.y;
       let dist = Math.sqrt(dx*dx+dy*dy);
-      puck.vx=dx/dist*5; puck.vy=dy/dist*5;
+      puck.vx=dx/dist*6; puck.vy=dy/dist*6;
     }
   }
 
@@ -135,8 +141,8 @@ class Player {
       if (this.team==="red" && inCrease(this,netRight)) return;
       if (this.team==="blue" && inCrease(this,netLeft)) return;
       puck.carriedBy = null;
-      puck.vx = this.team==="red"?6:-6;
-      puck.vy = (Math.random()-0.5)*4;
+      puck.vx = this.team==="red"?7:-7;
+      puck.vy = (Math.random()-0.5)*5;
     }
   }
 }
@@ -146,7 +152,7 @@ class Puck {
   draw(){ ctx.beginPath(); ctx.arc(this.x,this.y,this.radius,0,Math.PI*2); ctx.fillStyle="black"; ctx.fill(); ctx.closePath(); }
   update(){
     if(this.carriedBy){ this.x=this.carriedBy.x; this.y=this.carriedBy.y; } 
-    else { this.x+=this.vx; this.y+=this.vy; this.vx*=0.98; this.vy*=0.98; }
+    else { this.x+=this.vx; this.y+=this.vy; this.vx*=0.985; this.vy*=0.985; }
     if(this.x-this.radius<0){ this.x=this.radius; this.vx*=-0.5; }
     if(this.x+this.radius>canvas.width){ this.x=canvas.width-this.radius; this.vx*=-0.5; }
     if(this.y-this.radius<0){ this.y=this.radius; this.vy*=-0.5; }
@@ -155,19 +161,42 @@ class Puck {
 }
 
 function drawRink(){
-  ctx.strokeStyle="red"; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(canvas.width/2,0); ctx.lineTo(canvas.width/2,canvas.height); ctx.stroke();
-  ctx.strokeStyle="blue"; ctx.beginPath(); ctx.moveTo(canvas.width/3,0); ctx.lineTo(canvas.width/3,canvas.height); ctx.stroke();
+  ctx.strokeStyle="red"; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(canvas.width/2,0); ctx.lineTo(canvas.width/2,canvas.height); ctx.stroke();
+  ctx.strokeStyle="blue";
+  ctx.beginPath(); ctx.moveTo(canvas.width/3,0); ctx.lineTo(canvas.width/3,canvas.height); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(2*canvas.width/3,0); ctx.lineTo(2*canvas.width/3,canvas.height); ctx.stroke();
   ctx.beginPath(); ctx.arc(canvas.width/2,canvas.height/2,40,0,Math.PI*2); ctx.stroke();
   drawCrease(netLeft,"blue"); drawCrease(netRight,"blue");
 }
 
-function drawCrease(net,color){ ctx.strokeStyle=color; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(net.x+(net===netLeft?net.width:0),net.y+net.height/2,40,Math.PI/2,-Math.PI/2,net===netRight); ctx.stroke(); }
-function inCrease(player,net){ let cx=net.x+(net===netLeft?net.width:0),cy=net.y+net.height/2; return Math.sqrt((player.x-cx)**2+(player.y-cy)**2)<40; }
+function drawCrease(net,color){ 
+  ctx.strokeStyle=color; ctx.lineWidth=2; 
+  ctx.beginPath(); 
+  ctx.arc(net.x+(net===netLeft?net.width:0),net.y+net.height/2,40,Math.PI/2,-Math.PI/2,net===netRight); 
+  ctx.stroke(); 
+}
+function inCrease(player,net){ 
+  let cx=net.x+(net===netLeft?net.width:0),cy=net.y+net.height/2; 
+  return Math.sqrt((player.x-cx)**2+(player.y-cy)**2)<40; 
+}
 
 let netLeft={x:0,y:150,width:10,height:100}, netRight={x:790,y:150,width:10,height:100};
-let team1=[new Player(100,200,"red",false,false,"red"),new Player(80,150,"red",true,false,"red"),new Player(80,250,"red",true,false,"red"),new Player(50,200,"darkred",true,true,"red")];
-let team2=[new Player(700,150,"blue",true,false,"blue"),new Player(700,250,"blue",true,false,"blue"),new Player(750,200,"darkblue",true,true,"blue")];
+
+// ✅ 3 skaters + 1 goalie each
+let team1=[
+  new Player(100,200,"red",false,false,"red"),
+  new Player(80,150,"red",true,false,"red"),
+  new Player(80,250,"red",true,false,"red"),
+  new Player(50,200,"darkred",true,true,"red")
+];
+let team2=[
+  new Player(700,150,"blue",true,false,"blue"),
+  new Player(720,200,"blue",true,false,"blue"),
+  new Player(700,250,"blue",true,false,"blue"),
+  new Player(750,200,"darkblue",true,true,"blue")
+];
+
 let currentPlayer=team1[0];
 let puck=new Puck(400,200);
 
@@ -188,14 +217,19 @@ function movePlayer(player){
   player.x=Math.max(player.radius,Math.min(canvas.width-player.radius,player.x));
   player.y=Math.max(player.radius,Math.min(canvas.height-player.radius,player.y));
   if(keys["Space"]&&puck.carriedBy===player)player.shoot();
-  if(keys["ShiftLeft"]&&puck.carriedBy===player){ let mate=team1.find(p=>p!==player&&!p.isGoalie); if(mate){puck.carriedBy=null;let dx=mate.x-player.x,dy=mate.y-player.y,dist=Math.sqrt(dx*dx+dy*dy); puck.vx=dx/dist*5; puck.vy=dy/dist*5;} }
+  if(keys["ShiftLeft"]&&puck.carriedBy===player){ 
+    let mate=team1.find(p=>p!==player&&!p.isGoalie); 
+    if(mate){puck.carriedBy=null;let dx=mate.x-player.x,dy=mate.y-player.y,dist=Math.sqrt(dx*dx+dy*dy); puck.vx=dx/dist*6; puck.vy=dy/dist*6;} 
+  }
 }
 
 function update(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   drawRink(); drawGoals();
 
-  if(puck.carriedBy===currentPlayer){ team1.forEach(p=>{ if(p.isAI&&!p.isGoalie){ p.x+=(currentPlayer.x+60-p.x)*0.02; p.y+=(currentPlayer.y+(Math.random()*60-30)-p.y)*0.02;} }); }
+  if(puck.carriedBy===currentPlayer){ 
+    team1.forEach(p=>{ if(p.isAI&&!p.isGoalie){ p.x+=(currentPlayer.x+60-p.x)*0.02; p.y+=(currentPlayer.y+(Math.random()*60-30)-p.y)*0.02;} }); 
+  }
 
   team1.forEach(p=>{ if(p.isAI)p.moveAI(); p.draw(); });
   team2.forEach(p=>{ if(p.isAI)p.moveAI(); p.draw(); });
